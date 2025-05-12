@@ -54,40 +54,56 @@ Portfolio-Optimization/
 
 ---
 
-## 2. Como configurar
+## 2. Como configurar:
+
+Caso queria testar a extração de dados do período de agosto a dezembro de 2024, siga os passo 1 abaixo, caso contrário, pule para o passo 2.
 
 1. **Python & dados históricos**
 
-   * Crie um virtualenv e instale `yfinance`.
-   * Edite `scripts/download_data.py` com `[tickers], start_date, end_date`.
-   * Rode:
+   * Crie um ambiente virtual Python:
 
-     ```bash
-     cd scripts
-     python3 download_data.py
-     cd ..
-     ```
+        - MacOS/Linux:
+            ```bash
+            python3 -m venv venv
+            source venv/bin/activate
+            ```
 
-2. **`.env`**
-   No diretório raiz, crie um arquivo `.env` com sua chave AlphaVantage:
+        - Windows:
+            ```bash
+            python -m venv venv
+            venv\Scripts\activate
+            ```
 
-   ```dotenv
-   ALPHAVANTAGE_API_KEY=your_api_key_here
-   ```
+    * Instale as dependências:
+        ```bash
+        pip install -r requirements.txt
+        ```
 
-   O F# consome via:
+    * Execute o script para baixar os dados:
+        ```bash
+        cd scripts
+        python scripts/download_data.py
+        ```
+        Obs.: O script `download_data.py` baixa os dados históricos de fechamento dos 30 ativos do índice Dow Jones, de agosto a dezembro de 2024, e salva no arquivo `data/dow_jones_close_prices_aug_dec_2024.csv`. O qual já está incluído no repositório.
 
-   ```fsharp
-   open DotNetEnv
-   Env.Load() |> ignore
-   let apiKey = Environment.GetEnvironmentVariable "ALPHAVANTAGE_API_KEY"
-   ```
+<h3>Os passos abaixos são para testar ou rodar o projeto:</h3>
+
+2. **Arquivo `.env`**
+
+   Dentro do diretório `src/PortfolioOptimizer`, crie um arquivo `.env` com sua chave AlphaVantage, caso queria encontrar uma chave API, você pode criar uma conta gratuita no site da AlphaVantage e gerar uma chave de API, link: [AlphaVantage](https://www.alphavantage.co/support/#api-key).
+
+    Após ter criado a chave, adicione-a ao arquivo `.env`:
+
+    ```bash
+    ALPHAVANTAGE_API_KEY=your_api_key_here
+    ```
 
 3. **Compilar & executar**
 
+    Para compilar e executar o projeto, você deve seguir os passos abaixo:
+
    ```bash
    cd src/PortfolioOptimizer
-   dotnet restore
    dotnet build -c Release
    dotnet run -c Release
    ```
@@ -102,11 +118,10 @@ Nesta seção irei explicar de forma detalhada cada cálculo essencial do projet
 
 Para cada ativo *j* e cada par de dias consecutivos (*t-1*, *t*), calculamos o **retorno diário simples**:
 
-```
-retorno = (P_t / P_{t-1}) - 1.0
-```
 
-No código:
+$\text{retorno} = \left( \frac{P_t}{P_{t-1}} \right) - 1.0$
+
+**No código:**
 
 ```fsharp
 let returns =
@@ -114,6 +129,7 @@ let returns =
     prices.[i+1,j] / prices.[i,j] - 1.0)
 ```
 
+Onde:
 * `prices.[i,j]` é o preço de fechamento do **dia i** para o ativo *j*.
 * `Array2D.init (days-1) assets` gera uma matriz de dimensão `(dias-1) × (ativos)`, salvando cada retorno numa posição `[i,j]`.
 
@@ -121,11 +137,9 @@ let returns =
 
 O **Sharpe Ratio anualizado** expressa o retorno excedente por unidade de risco:
 
-```
-Sharpe = (RetornoAnualizado - RF) / VolatilidadeAnualizada
-```
+$\text{Sharpe} = \frac{\text{RetornoAnualizado} - \text{RF}}{\text{VolatilidadeAnualizada}}$
 
-No código:
+**No código:**
 
 ```fsharp
 let dailyRet = muVec.DotProduct wVec
@@ -183,21 +197,52 @@ comb 0 k |> Seq.toArray
 
 ## 4. Paralelismo
 
-* **Dentro de F#** (Pure functions + PSeq) ou **C#** (Parallel.For):
+O paralelismo é uma técnica usada para tornar mais rápido o processamento de muitas combinações de ativos e simulações. Aqui, explico de forma simples e direta por que ele é usado, como funciona e o que os testes mostram.
 
-  ```fsharp
-  combos
-  |> PSeq.mapi (fun i combo -> evaluateCombo combo)
-  |> PSeq.toArray
-  ```
+### 4.1 Por que usar paralelismo?
+Como sabemos que precisamos lidar com:
 
-  ou
+- **Muitas combinações:** São geradas cerca de 142.506 combinações possíveis a partir de 25 ativos.
+- **Simulações extras:** Para cada combinação, fazemos 1.000 simulações de Monte Carlo, criando pesos aleatórios e calculando o Índice de Sharpe.
 
-  ```csharp
-  Parallel.For(0, combos.Length, options, fun i _ -> …)
-  ```
-* Cada **combinação** (≈ 142 506) e cada **simulação** (1 000 chutes) é independente → escala com núcleos.
-* **Benchmark**: 5 execuções de cada modo (seq, half cores, max cores).
+Como cada combinação e simulação é independente (não precisa esperar as outras), o paralelismo permite dividir o trabalho entre os núcleos do processador, reduzindo o tempo total.
+
+### 4.2 Como o paralelismo é feito
+
+O paralelismo foi implementado de duas formas principais:
+
+1. Em **F#** usando `PSeq` (Parallel Sequence):
+
+    O módulo `PSeq` permite processar sequências de forma paralela, dividindo o trabalho entre os núcleos disponíveis.
+
+    **Exemplo no código:**
+
+    ```fsharp
+    combos
+    |> PSeq.mapi (fun i combo -> evaluateCombo combo)
+    |> PSeq.toArray
+    ```
+
+    Isso roda a função `evaluateCombo` em paralelo para cada combinação.
+
+2. Em **C#** usando `Parallel.For`:
+
+    O `Parallel.For` é uma maneira de executar loops em paralelo, dividindo o trabalho entre os núcleos disponíveis.
+
+    **Exemplo no código:**
+
+    ```csharp
+    Parallel.For(0, combos.Length, options, fun i _ -> …)
+    ```
+
+## Benchmark
+Incluí um benchmark no projeto para comparar o desempenho:
+
+- Modo sequencial: Usa só 1 núcleo.
+- Paralelo com metade dos núcleos: Usa metade dos núcleos disponíveis.
+- Paralelo com todos os núcleos: Usa todos os núcleos.
+
+Rodei cada modo 5 vezes e calculei o tempo médio. O objetivo é mostrar como o tempo diminui quando uso mais núcleos, podemos ver isso na tabela abaixo.
 
 ---
 
@@ -275,6 +320,7 @@ comb 0 k |> Seq.toArray
 ---
 
 ## 6. Itens opcionais
+Foram implementados os seguintes itens opcionais:
 
 1. **Fetch via API**
 
@@ -292,13 +338,3 @@ comb 0 k |> Seq.toArray
    * CSVs `runtimes_comparison.csv` e `average_runtimes.csv` gerados automaticamente.
 
 ---
-
-## 7. Conclusão
-
-Este README demonstra que todos os **requisitos da rubrica** foram atendidos:
-
-* **Funcional**: todo cálculo é puro, sem efeitos colaterais.
-* **Paralelizado**: combinações e simulações em paralelo (F# PSeq ou C# Parallel.For).
-* **Arquitetura clara**: módulos `Utils`, `DataLoader`, `Simulator`, `Program`, e `DataFetcherCs`.
-* **Ambiente**: `.env` para segredos, `scripts/download_data.py` para dados históricos.
-* **Resultados**: tabelas com tempos, carteira ótima e métricas de backtest.
