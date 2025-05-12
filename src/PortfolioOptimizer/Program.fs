@@ -11,7 +11,7 @@ open FSharp.Collections.ParallelSeq
 open DataLoader
 open Simulator
 open Utils
-open DataFetcherCs  // biblioteca C# para fetch
+open DataFetcherCs
 open DotNetEnv
 
 [<EntryPoint>]

@@ -1,4 +1,3 @@
-// DataLoader.fs
 module DataLoader
 
 open FSharp.Data
