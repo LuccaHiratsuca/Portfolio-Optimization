@@ -1,7 +1,7 @@
 # Portfolio Optimization em F\#
 
 Este repositório implementa uma simulação e otimização de carteiras de 25 ativos escolhidos dentre os 30 do índice Dow Jones, usando F# (e um módulo C# para fetch de dados via API).
----
+
 
 ## 1. Arquitetura do Projeto
 
