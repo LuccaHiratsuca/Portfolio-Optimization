@@ -1,0 +1,4 @@
+Mode,Cores,AverageElapsed_ms
+Sequential,1,48358.53
+ParallelHalf,6,49336.92
+ParallelMax,12,55096.20

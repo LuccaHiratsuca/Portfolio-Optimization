@@ -1,0 +1,16 @@
+Mode,Cores,Run,Elapsed_ms
+Sequential,1,1,49575
+Sequential,1,2,47932
+Sequential,1,3,47923
+Sequential,1,4,48335
+Sequential,1,5,48028
+ParallelHalf,6,1,49253
+ParallelHalf,6,2,48496
+ParallelHalf,6,3,48644
+ParallelHalf,6,4,48883
+ParallelHalf,6,5,51409
+ParallelMax,12,1,55401
+ParallelMax,12,2,55349
+ParallelMax,12,3,54936
+ParallelMax,12,4,54851
+ParallelMax,12,5,54943
