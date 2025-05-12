@@ -5,39 +5,51 @@ Este repositório implementa uma simulação e otimização de carteiras de 25 a
 
 ## 1. Arquitetura do Projeto
 
-```
+```bash
 Portfolio-Optimization/
-├── data/
-│   ├─ dow_jones_close_prices_aug_dec_2024.csv    # dados Python
-│   ├─ runtimes_comparison.csv                    # tempos de cada run
-│   ├─ average_runtimes.csv                       # médias de tempos
-│   ├─ best_portfolio.csv                         # carteira ótima
-│   ├─ backtest_q1_2025.csv                       # métricas backtest
-│   └─ backtest_q1_2025_daily_returns.csv         # retornos diários backtest
-├── scripts/
-│   └─ download_data.py                           # Python + yfinance
-├── src/
-│   ├─ DataFetcherCs/                             # projeto C# para API
-│   │   └─ DataFetcher.cs                         # HttpClient + Alpha Vantage
-│   └─ PortfolioOptimizer/                        # projeto F#
-│       ├─ .env                   — variáveis de ambiente
-│       ├─ Utils.fs            — utilitários puros:  
-│       │   • `annualizeReturn`, `annualizeVolatility`  
-│       │   • `sharpeRatio`, `randomWeights`, `combinations`  
-│       ├─ DataLoader.fs       — carrega CSV e gera matriz de retornos diarios  
-│       ├─ Simulator.fs        —  
-│       │   • `simulateSharpe` (μ, cov, w → Sharpe)  
-│       │   • `findBestForStats` (Monte Carlo + max)  
-│       └─ Program.fs          — orquestra tudo:  
-│           1. `.env` via DotNetEnv  
-│           2. carrega retornos (DataLoader)  
-│           3. calcula μ, cov (MathNet.Statistics)  
-│           4. gera combos 25-de-30 (`combinations`)  
-│           5. simula e escolhe melhor (Parallel.For ou PSeq)  
-│           6. benchmark (5 runs seq/parcial/max)  
-│           7. backtest Q1-2025 (DataFetcherCs + F#)  
-│           8. salva CSVs de resultados  
-└── README.md
+├── 📁 data/
+│   ├─ 📄 dow_jones_close_prices_aug_dec_2024.csv    # Dados históricos de fechamento
+│   ├─ 📄 runtimes_comparison.csv                    # Comparativo de tempos de execução
+│   ├─ 📄 average_runtimes.csv                       # Médias de performance por método
+│   ├─ 📄 best_portfolio.csv                         # Composição da carteira ótima
+│   ├─ 📄 backtest_q1_2025.csv                       # Resultados do backtest (métricas)
+│   └─ 📄 backtest_q1_2025_daily_returns.csv         # Retornos diários do backtest
+│
+├── 📁 scripts/
+│   └─ 📄 download_data.py                           # Script Python para download de dados (yfinance)
+│
+├── 📁 src/
+│   ├─ 📁 DataFetcherCs/                             # Projeto C# para coleta de dados
+│   │   └─ 📄 DataFetcher.cs                         # Client HTTP para Alpha Vantage API
+│   │
+│   └─ 📁 PortfolioOptimizer/                        # Núcleo F# da otimização
+│       ├─ 📄 .env                                   # Configurações de ambiente
+│       ├─ 📄 Utils.fs                               # Funções utilitárias:
+│       │   • `annualizeReturn` 📈                  # Annualização de retornos
+│       │   • `annualizeVolatility` 📉              # Annualização de volatilidade
+│       │   • `sharpeRatio` ⚖️                     # Cálculo do Índice de Sharpe
+│       │   • `randomWeights` 🎲                    # Geração de pesos aleatórios
+│       │   • `combinations` ➗                      # Combinações de ativos
+│       │
+│       ├─ 📄 DataLoader.fs                          # Carregamento e transformação de dados:
+│       │   • Leitura de CSVs 📂
+│       │   • Geração de matriz de retornos 📊
+│       │
+│       ├─ 📄 Simulator.fs                           # Motor de simulação:
+│       │   • `simulateSharpe` 🔄 (μ, cov, w → Sharpe)
+│       │   • `findBestForStats` 🏁 (Monte Carlo + maximização)
+│       │
+│       └─ 📄 Program.fs                             # Orquestração principal:
+│           1. Carrega configurações (.env) ⚙️
+│           2. Importa dados históricos 📥
+│           3. Calcula μ e cov (MathNet) 🧮
+│           4. Gera combinações de 25/30 ativos 🔀
+│           5. Executa simulação paralela ⚡
+│           6. Benchmarks de performance ⏱️
+│           7. Backtest Q1-2025 🔄
+│           8. Exporta resultados 📤
+│
+└─ 📄 README.md                                      # Documentação do projeto
 ```
 
 ---
